@@ -17,12 +17,11 @@ app.use('/*', serveStatic({ root: './public' }))
 
 // STEP 1 - ASK THE USER FOR THE LEGENDARY HUMAN
 app.frame('/', (c) => {
-  const { buttonValue, inputText, status } = c
   return c.res({
     action: "/step-one",
-    image: ('https://github.com/jpfraneto/images/blob/main/legendary.png?raw=true'),
+    image: ('https://github.com/jpfraneto/images/blob/main/leggendary.png?raw=true'),
     intents: [
-      <TextInput placeholder="ricky martin, cristiano ronaldo, etc." />,
+      <TextInput placeholder="jerry garcia, steve jobs, etc." />,
       <Button value="reply">reply</Button>,
     ],
   })
@@ -34,7 +33,7 @@ app.frame('/step-one', async (c) => {
   let fid, userInput
   if(frameData){
     fid = frameData.fid
-    userInput = frameData.inputText
+    userInput = frameData?.inputText || ""
   }
   const thisUserData = readJSONFromFile(fid)
   if(thisUserData) {
@@ -56,7 +55,7 @@ app.frame('/step-one', async (c) => {
                   <div
           style={{
             color: 'white',
-            fontSize: 40,
+            fontSize: 50,
             fontStyle: 'normal',
             letterSpacing: '-0.025em',
             lineHeight: 1,
@@ -72,19 +71,57 @@ app.frame('/step-one', async (c) => {
         </div>
       ),
       intents: [
-        <Button.Link href="https://warpcast.com/~/compose?text=choose%20the%20most%20legendary%20human%20of%20our%20time%20on%20the%20frame%20below%20%F0%9F%91%87%F0%9F%8F%BD%20%28credits%3A%20%40jpfraneto%29&embeds[]=https://bangercaster.xyz
+        <Button.Link href="https://warpcast.com/~/compose?text=choose%20the%20most%20legendary%20human%20of%20our%20time%20on%20the%20frame%20below%20%F0%9F%91%87%F0%9F%8F%BD%20%28credits%3A%20%40jpfraneto%29&embeds[]=https://bangercaster.xyz/api
         ">share frame</Button.Link>,
       ],
     })
   } else {
-    console.log("asking poiesis about ", userInput)
-    console.log('the api key for poiesis is,', process.env.POIESIS_API_KEY)
+    if(!frameData?.inputText || frameData?.inputText.length < 8 ){
+      return c.res({
+        image: (
+
+          <div
+          style={{
+                alignItems: 'center',
+                background:'linear-gradient(to right, #432889, #17101F)',
+                backgroundSize: '100% 100%',
+                display: 'flex',
+                flexDirection: 'column',
+                flexWrap: 'nowrap',
+                height: '100%',
+                justifyContent: 'center',
+                textAlign: 'center',
+                width: '100%',
+              }}>
+              <div
+      style={{
+        color: 'white',
+        fontSize: 50,
+        fontStyle: 'normal',
+        letterSpacing: '-0.025em',
+        lineHeight: 1,
+        display: "flex",
+        marginTop: 30,
+        padding: '0 120px',
+        whiteSpace: 'pre-wrap',
+      }}
+    >
+             enter a valid name
+    </div>
+    </div>
+        ),
+        intents: [
+          <TextInput placeholder="ricky martin, cristiano ronaldo, etc." />,
+          <Button value="reply">try again</Button>,
+        ],
+      })
+    }
     let poiesisResponse = await axios.post('https://poiesis.anky.bot/legendary', {userInput} ,{
       headers: {
         'Authorization': `Bearer ${process.env.POIESIS_API_KEY}`
       }
     });
-    console.log("the response from poiesis is", poiesisResponse.data)
+    console.log("the response from poiesis is", poiesisResponse)
     if(poiesisResponse?.data?.isLegendary){
       const dataToSave = {
         chosenHuman: userInput,
@@ -107,7 +144,7 @@ app.frame('/step-one', async (c) => {
       let castOptions = {
         text: castText,
         signer_uuid: process.env.ANKYSYNC_SIGNER,
-        parent: "0x69d527ab06bbfa839c0ed63f1cff0d9588b9ebb9"
+        parent: rootCastHash
       };
       const neynarResponse = axios.post(
         "https://api.neynar.com/v2/farcaster/cast",
@@ -137,7 +174,7 @@ app.frame('/step-one', async (c) => {
               <div
       style={{
         color: 'white',
-        fontSize: 40,
+        fontSize: 50,
         fontStyle: 'normal',
         letterSpacing: '-0.025em',
         lineHeight: 1,
@@ -149,15 +186,33 @@ app.frame('/step-one', async (c) => {
     >
              {dataToSave.replyToUser}
     </div>
+    <div
+      style={{
+        color: 'orange',
+        fontSize: 40,
+        fontStyle: 'normal',
+        letterSpacing: '-0.025em',
+        lineHeight: 1,
+        display: "flex",
+        marginTop: 30,
+        padding: '0 120px',
+        whiteSpace: 'pre-wrap',
+      }}
+    >
+             (your choice was commented below the first cast where this frame was shared)
+    </div>
 
     </div>
         ),
+        intents: [
+          <Button.Link href={`https://warpcast.com/jpfraneto/${rootCastHash.slice(0,10)}`}>read comments</Button.Link>,
+          <Button.Link href="https://warpcast.com/~/compose?text=choose%20the%20most%20legendary%20human%20of%20our%20time%20on%20the%20frame%20below%20%F0%9F%91%87%F0%9F%8F%BD%20%28credits%3A%20%40jpfraneto%29&embeds[]=https://bangercaster.xyz/api
+          ">share frame</Button.Link>,
+        ],
       })
     } else {
       return c.res({
         image: (
-  
-
 <div
 style={{
       alignItems: 'center',
@@ -174,7 +229,7 @@ style={{
     <div
 style={{
 color: 'white',
-fontSize: 40,
+fontSize: 50,
 fontStyle: 'normal',
 letterSpacing: '-0.025em',
 lineHeight: 1,
@@ -196,63 +251,6 @@ whiteSpace: 'pre-wrap',
       })
     }
   }
-  
-  return c.res({
-    image: (
-      <div
-        style={{
-          color:"white",
-          padding: '40px',
-          fontSize: "40px"
-        }}>
-        hello world
-      </div>
-    ),
-  })
-
-  let castOptions = {
-    text: text,
-    signer_uuid: process.env.ANKYSYNC_SIGNER,
-    parent: "0x58e7b4a0e60378dbc95196e13741a97fcbcb9354"
-  };
-  let response1 = "fear is overload. try again.";
-  try {
-    let responsee = await axios.post('https://poiesis.anky.bot/fear', {text} ,{
-      headers: {
-        'Authorization': `Bearer ${process.env.POIESIS_API_KEY}`
-      }
-    });
-    response1 = responsee.data.fear
-  } catch (error) {
-    console.log("there was an error casting")
-  }
-
-  try {
-    const neynarResponse = axios.post(
-      "https://api.neynar.com/v2/farcaster/cast",
-      castOptions,
-      {
-        headers: {
-          api_key: process.env.NEYNAR_API_KEY,
-        },
-      }
-    );
-  } catch (error) {
-    console.log("there was an error casting")
-  }
-
-  return c.res({
-    image: (
-      <div
-        style={{
-          color:"white",
-          padding: '40px',
-          fontSize: "40px"
-        }}>
-        {response1}
-      </div>
-    ),
-  })
 })
 
 // app.frame('/', (c) => {
